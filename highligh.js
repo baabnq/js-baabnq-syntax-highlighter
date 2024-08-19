@@ -14,7 +14,10 @@ var lexBaabnq = (raw) => {
     var tokenStartIndex = 0;
 
     let getTokenType = (content) => {
-        let OP = ["+", "-", "|", "&", "^", "<<", ">>", "=", "~", "==", "!=", "<", ">"];
+        let EOS = ";";
+        if (content == EOS) return { categ : "EOS"  , style : "color: gray" };        
+        
+        let OP = ["+", "-", "|", "&", "^", "<<", ">>", "=", "~", "==", "!=", "<", ">", "(", ")"];
         
         if (/^\d+$/.test(content))   return { categ : "NUM", style : "color: orange" };
         if (content.startsWith("_")) return { categ : "VAR", style : "color: cyan" };
@@ -37,9 +40,14 @@ var lexBaabnq = (raw) => {
     }
     
 
-    let pushEOS = () => tokenStream.push({ content : ";", start : index, end : index + 1, type : { categ : "EOS", style : "color: gray" }}); 
+    let pushChar = (chr) => tokenStream.push({ 
+        content : ";", 
+        start : index, 
+        end : index + 1, 
+        type : getTokenType(chr)
+    }); 
 
-    let pushToken = () => {
+    let pushBuffer = () => {
         tokenStream.push({
             content : buffer,
             start : tokenStartIndex,
@@ -57,16 +65,18 @@ var lexBaabnq = (raw) => {
         else switch (chr)
         {
             case ';':
-                pushToken();
-                pushEOS();
+            case '(':
+            case ')':
+                if (buffer) pushBuffer();
+                pushChar(chr);
                 updateTokenStart();
                 break;
-                
+                                
             case '\n':
                 isComment = false;
 
             case ' ':
-                if (buffer) pushToken();
+                if (buffer) pushBuffer();
                 updateTokenStart();
                 break;
                 
